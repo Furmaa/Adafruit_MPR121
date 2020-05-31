@@ -29,6 +29,7 @@
 #define MPR121_I2CADDR_DEFAULT 0x5A        ///< default I2C address
 #define MPR121_TOUCH_THRESHOLD_DEFAULT 12  ///< default touch threshold value
 #define MPR121_RELEASE_THRESHOLD_DEFAULT 6 ///< default relese threshold value
+#define MPR121_ECR_SETTING_DEFAULT 0x8F // 5 bits for baseline tracking & proximity disabled & all electrodes running
 
 /*!
  *  Device register map
@@ -85,10 +86,11 @@ public:
   // Hardware I2C
   Adafruit_MPR121();
 
-  boolean begin(uint8_t i2caddr = MPR121_I2CADDR_DEFAULT,
-                TwoWire *theWire = &Wire,
-                uint8_t touchThreshold = MPR121_TOUCH_THRESHOLD_DEFAULT,
+  void open(uint8_t i2caddr = MPR121_I2CADDR_DEFAULT,
+                TwoWire *theWire = &Wire);
+  boolean init( uint8_t touchThreshold = MPR121_TOUCH_THRESHOLD_DEFAULT,
                 uint8_t releaseThreshold = MPR121_RELEASE_THRESHOLD_DEFAULT);
+  void begin(uint8_t ecr = MPR121_ECR_SETTING_DEFAULT);
 
   uint16_t filteredData(uint8_t t);
   uint16_t baselineData(uint8_t t);
@@ -101,6 +103,7 @@ public:
   void setThreshholds(uint8_t touch, uint8_t release)
       __attribute__((deprecated));
   void setThresholds(uint8_t touch, uint8_t release);
+
 
 private:
   int8_t _i2caddr;

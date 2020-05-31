@@ -37,26 +37,31 @@
 Adafruit_MPR121::Adafruit_MPR121() {}
 
 /*!
- *  @brief    Begin an MPR121 object on a given I2C bus. This function resets
- *            the device and writes the default settings.
+ *  @brief    Begin an MPR121 object on a given I2C bus.
  *  @param    i2caddr
  *            the i2c address the device can be found on. Defaults to 0x5A.
- *  @param    *theWire
+ *  @param    theWire
  *            Wire object
+ */
+
+void Adafruit_MPR121::open(uint8_t i2caddr, TwoWire *theWire) {
+  _i2caddr = i2caddr;
+  _wire = theWire;
+
+  _wire->begin();  
+}
+
+/*!
+ *  @brief    This function resets the device and writes the default settings.
  *  @param    touchThreshold
  *            touch detection threshold value
  *  @param    releaseThreshold
  *            release detection threshold value
  *  @returns  true on success, false otherwise
  */
-boolean Adafruit_MPR121::begin(uint8_t i2caddr, TwoWire *theWire,
-                               uint8_t touchThreshold,
+
+boolean Adafruit_MPR121::init( uint8_t touchThreshold,
                                uint8_t releaseThreshold) {
-
-  _i2caddr = i2caddr;
-  _wire = theWire;
-
-  _wire->begin();
 
   // soft reset
   writeRegister(MPR121_SOFTRESET, 0x63);
@@ -66,12 +71,12 @@ boolean Adafruit_MPR121::begin(uint8_t i2caddr, TwoWire *theWire,
     //  Serial.print(": 0x"); Serial.println(readRegister8(i));
   }
 
-  writeRegister(MPR121_ECR, 0x0);
-
   uint8_t c = readRegister8(MPR121_CONFIG2);
 
   if (c != 0x24)
     return false;
+
+  // writeRegister(MPR121_ECR, 0x0); unneeded! 
 
   setThresholds(touchThreshold, releaseThreshold);
   writeRegister(MPR121_MHDR, 0x01);
@@ -101,13 +106,21 @@ boolean Adafruit_MPR121::begin(uint8_t i2caddr, TwoWire *theWire,
   writeRegister(MPR121_LOWLIMIT, 130);    // UPLIMIT * 0.65
 #endif
 
-  // enable X electrodes and start MPR121
-  byte ECR_SETTING =
-      B10000000 + 12; // 5 bits for baseline tracking & proximity disabled + X
-                      // amount of electrodes running (12)
-  writeRegister(MPR121_ECR, ECR_SETTING); // start with above ECR setting
 
   return true;
+}
+
+/*!
+ *  @brief      writes to MPR121_ECR. 0x00 puts device into Stop Mode.
+ *              0x8F enables all electrodes but not the proximity sensing, with baseline tracking
+ *              0x0F enables all electrodes without proximity sensing nor baseline tracking
+ *  @param      ecr
+ *              uint8_t byte data to control electrodes and baseine-tracking
+ */
+
+void Adafruit_MPR121::begin(uint8_t ecr) {
+    // enable X electrodes and start MPR121
+  writeRegister(MPR121_ECR, ecr); 
 }
 
 /*!
@@ -141,14 +154,14 @@ void Adafruit_MPR121::setThreshholds(uint8_t touch, uint8_t release) {
  */
 void Adafruit_MPR121::setThresholds(uint8_t touch, uint8_t release) {
   // first stop sensor to make changes
-  writeRegister(MPR121_ECR, 0x00);
+  // writeRegister(MPR121_ECR, 0x00);
   // set all thresholds (the same)
   for (uint8_t i = 0; i < 12; i++) {
     writeRegister(MPR121_TOUCHTH_0 + 2 * i, touch);
     writeRegister(MPR121_RELEASETH_0 + 2 * i, release);
   }
   // turn the sensor on again
-  writeRegister(MPR121_ECR, 0x8F);
+  // writeRegister(MPR121_ECR, 0x8F);
 }
 
 /*!
@@ -257,3 +270,4 @@ void Adafruit_MPR121::writeRegister(uint8_t reg, uint8_t value) {
     _wire->endTransmission();
   }
 }
+
